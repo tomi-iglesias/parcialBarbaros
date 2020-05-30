@@ -33,16 +33,14 @@ espada unPeso unBarbaro = modificarFuerza (unPeso*2) unBarbaro
 agregarHabilidad :: Habilidad -> Objeto
 agregarHabilidad unaHabilidad unBarbaro = unBarbaro { habilidades = unaHabilidad : habilidades unBarbaro }
 
-amuletosMisticos :: String -> Habilidad -> Objeto
-amuletosMisticos unAmuleto unaHabilidad unBarbaro 
-    | unAmuleto == "puerco-marranos" = agregarHabilidad unaHabilidad unBarbaro
-    | otherwise = unBarbaro
+amuletoMistico :: String -> Objeto
+amuletoMistico unaHabilidad unBarbaro = agregarHabilidad unaHabilidad unBarbaro
 
 borrarObjetos :: Objeto
-borrarObjetos unBarbaro = unBarbaro { objetos = [] }
+borrarObjetos unBarbaro = unBarbaro { objetos = [varitasDefectuosas] }
 
 varitasDefectuosas :: Objeto
-varitasDefectuosas unBarbaro = ((agregarHabilidad "magia").borrarObjetos) unBarbaro
+varitasDefectuosas unBarbaro = (agregarHabilidad "magia".borrarObjetos) unBarbaro
 
 ardilla :: Objeto
 ardilla unBarbaro = unBarbaro
@@ -55,7 +53,7 @@ concatenarHabilidades :: Barbaro -> String
 concatenarHabilidades unBarbaro = (concat.habilidades) unBarbaro
 
 pasasHabilidadesAMayuscula :: Barbaro -> Barbaro
-pasasHabilidadesAMayuscula unBarbaro = unBarbaro { habilidades = [((map toUpper).concatenarHabilidades) unBarbaro] }
+pasasHabilidadesAMayuscula unBarbaro = unBarbaro { habilidades = [(map toUpper.concatenarHabilidades) unBarbaro] }
 
 megafono :: Objeto
 megafono unBarbaro = pasasHabilidadesAMayuscula unBarbaro
@@ -66,18 +64,18 @@ megafonoBarbarico unBarbaro = cuerda ardilla megafono unBarbaro
 
 --es mas expresivo Barbaro -> Bool que -> Aventura en este caso
 tieneHabilidad :: Habilidad -> Barbaro -> Bool
-tieneHabilidad unaHabilidad unBarbaro = (any (==unaHabilidad).habilidades) unBarbaro
+tieneHabilidad unaHabilidad unBarbaro = (elem unaHabilidad.habilidades) unBarbaro
 
 invasionDeSuciosDuendes :: Aventura
 invasionDeSuciosDuendes unBarbaro = tieneHabilidad "Escribir Poesia Atroz" unBarbaro
 
 cremalleraDelTiempo :: Aventura
-cremalleraDelTiempo unBarbaro = (tienePulgares.nombre) unBarbaro
+cremalleraDelTiempo unBarbaro = not.tienePulgares.nombre $ unBarbaro
 
 tienePulgares :: String -> Bool
-tienePulgares "Faffy" = True
-tienePulgares "Astro" = True
-tienePulgares _ = False
+tienePulgares "Faffy" = False
+tienePulgares "Astro" = False
+tienePulgares _ = True
 
 saqueo :: Aventura
 saqueo unBarbaro =  (tieneHabilidad "robar" unBarbaro) && (80 < fuerza unBarbaro)
@@ -94,30 +92,33 @@ cantidadDeLetrasDeHabilidades unBarbaro = (length.concatenarHabilidades) unBarba
 gritoDeGuerra :: Aventura
 gritoDeGuerra unBarbaro = obtenerGritoDeGuerra unBarbaro >= cantidadDeLetrasDeHabilidades unBarbaro
 
-cantidadHabilidadesConMasDe3Vocales :: Aventura
-cantidadHabilidadesConMasDe3Vocales unBarbaro = (all contieneMasDe3Vocales.habilidades) unBarbaro
+tieneHabilidadesConMasDe3Vocales :: Aventura
+tieneHabilidadesConMasDe3Vocales unBarbaro = (all contieneMasDe3Vocales.habilidades) unBarbaro
 
 contieneMasDe3Vocales :: Habilidad -> Bool
 contieneMasDe3Vocales unaHabilidad = (length.filter esVocal) unaHabilidad > 3
+
+empiezaConMayuscula :: Habilidad-> Bool
+empiezaConMayuscula unaHabilidad = isUpper . head $ unaHabilidad
 
 --como "Escribir Poesia Atroz" comienza con mayuscula, agregamos los casos de habilidades que comienzen con mayuscula vocal. 
 esVocal :: Char -> Bool
 esVocal unaLetra = elem unaLetra "aeiouAEIOU" 
 
-habilidadComienzaConMaysucula :: Aventura
-habilidadComienzaConMaysucula unBarbaro = (length.(filter esMayuscula.habilidades)) unBarbaro == (length.habilidades) unBarbaro
-
-esMayuscula :: Habilidad -> Bool
-esMayuscula unaHabilidad = (isUpper.head) unaHabilidad
-
 caligrafia :: Aventura
-caligrafia unBarbaro = cantidadHabilidadesConMasDe3Vocales unBarbaro && habilidadComienzaConMaysucula unBarbaro
+caligrafia unBarbaro = all (\unaHabilidad -> contieneMasDe3Vocales unaHabilidad && empiezaConMayuscula unaHabilidad) . habilidades $ unBarbaro
 
-ritualDeFechorias :: Aventura
-ritualDeFechorias unBarbaro = caligrafia unBarbaro || gritoDeGuerra unBarbaro || saqueo unBarbaro
+ritualDeFechorias :: Barbaro -> [Aventura] -> Bool
+ritualDeFechorias unBarbaro listaAventuras = any (==True) . map (pasaAventura unBarbaro) $ listaAventuras
+
+pasaAventura :: Barbaro -> Aventura -> Bool
+pasaAventura unBarbaro unaAventura = unaAventura unBarbaro
 
 sobrevivientes :: [Barbaro] -> Aventura -> [Barbaro]
-sobrevivientes listaBarbaros unaAventura = filter unaAventura listaBarbaros
+sobrevivientes listaBarbaros unaAventura = filter (sobrevive unaAventura) listaBarbaros
+
+sobrevive :: Aventura -> Barbaro -> Bool
+sobrevive unaAventura unBarbaro = unaAventura unBarbaro
 
 -- es mas expresivo Barbaro -> Barbaro que -> Objeto en este caso
 listaSinRepetirHabilidades :: Barbaro -> Barbaro
